@@ -1,41 +1,113 @@
-import Image from 'next/image'
+"use client"
 
-export default function Home() {
+import type React from "react"
+
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { AlertCircle, BookOpen } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+
+export default function BookPriceChecker() {
+  const [bookName, setBookName] = useState("")
+  const [model, setModel] = useState("openai")
+  const [price, setPrice] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!bookName.trim()) {
+      setError("Please enter a book name")
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    setPrice(null)
+
+    try {
+      const response = await fetch(`http://localhost:500/api/get-price`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ bookName, model }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`)
+      }
+
+      const data = await response.json()
+      setPrice(data.price)
+    } catch (err) {
+      setError(`Failed to fetch price: ${err instanceof Error ? err.message : "Unknown error"}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-red-900 to-purple-900 p-24">
-        <div className="relative flex flex-col items-center justify-center">
-          {/* Wine icon */}
-          <div className="mb-8">
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="80"
-                height="80"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="rgba(255,255,255,0.9)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-            >
-              <path d="M8 22h8"></path>
-              <path d="M12 11v11"></path>
-              <path d="M12 11a5 5 0 0 0 5-5c0-2-.5-4-2-8H9c-1.5 4-2 6-2 8a5 5 0 0 0 5 5z"></path>
-            </svg>
-          </div>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-2xl flex items-center gap-2">
+            <BookOpen className="h-5 w-5" />
+            Book Price Checker
+          </CardTitle>
+          <CardDescription>Enter a book name to get its price from different AI models</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="book-name">Book Name</Label>
+              <Input
+                id="book-name"
+                placeholder="Enter book name"
+                value={bookName}
+                onChange={(e) => setBookName(e.target.value)}
+              />
+            </div>
 
-          {/* Main title */}
-          <h1 className="text-5xl md:text-7xl font-bold text-center text-white mb-4 tracking-wide">
-            Wine Scanner Demo
-          </h1>
+            <div className="space-y-2">
+              <Label htmlFor="model">AI Model</Label>
+              <Select value={model} onValueChange={setModel}>
+                <SelectTrigger id="model">
+                  <SelectValue placeholder="Select model" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="openai">OpenAI</SelectItem>
+                  <SelectItem value="gemini">Gemini</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Decorative underline */}
-          <div className="h-1 w-48 bg-white opacity-50 rounded-full mb-8"></div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Checking Price..." : "Get Price"}
+            </Button>
 
-          {/* Subtle caption */}
-          <p className="text-white text-opacity-80 text-xl text-center max-w-md">
-            Discover wine details with a simple scan
-          </p>
-        </div>
-      </main>
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            {price !== null && (
+              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
+                <p className="text-sm text-gray-500">Price:</p>
+                <p className="text-2xl font-bold">${price} USD</p>
+              </div>
+            )}
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   )
 }
+
