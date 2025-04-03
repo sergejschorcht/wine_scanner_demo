@@ -8,12 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { AlertCircle, BookOpen } from "lucide-react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertCircle, BookOpen, ServerIcon } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function BookPriceChecker() {
   const [bookName, setBookName] = useState("")
   const [model, setModel] = useState("openai")
+  const [formatType, setFormatType] = useState("hardcover")
   const [price, setPrice] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -31,24 +32,43 @@ export default function BookPriceChecker() {
     setPrice(null)
 
     try {
-      const response = await fetch(`http://localhost:500/api/get-price`, {
+      // Add a timeout to prevent long waits if the server is down
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
+      const response = await fetch(`http://localhost:5000/api/retrieve`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ bookName, model }),
-      })
+        body: JSON.stringify({ 
+          book_name: bookName, 
+          format_type: formatType, 
+          model 
+        }),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`Error: ${response.status}`)
+        const errorText = await response.text();
+        throw new Error(`Server error (${response.status}): ${errorText}`);
       }
 
-      const data = await response.json()
-      setPrice(data.price)
+      const data = await response.json();
+      setPrice(data.price);
     } catch (err) {
-      setError(`Failed to fetch price: ${err instanceof Error ? err.message : "Unknown error"}`)
+      if (err.name === 'AbortError') {
+        setError("Request timed out. Please check if the API server is running at http://localhost:5000");
+      } else if (err instanceof TypeError && err.message.includes('fetch')) {
+        setError("Failed to connect to the API server. Please make sure it's running at http://localhost:5000");
+      } else {
+        setError(`${err instanceof Error ? err.message : "Unknown error"}. Check the console for more details.`);
+      }
+      console.error("API Request Error:", err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -75,6 +95,21 @@ export default function BookPriceChecker() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="format-type">Format Type</Label>
+              <Select value={formatType} onValueChange={setFormatType}>
+                <SelectTrigger id="format-type">
+                  <SelectValue placeholder="Select format" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hardcover">Hardcover</SelectItem>
+                  <SelectItem value="paperback">Paperback</SelectItem>
+                  <SelectItem value="ebook">E-Book</SelectItem>
+                  <SelectItem value="audiobook">Audiobook</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="model">AI Model</Label>
               <Select value={model} onValueChange={setModel}>
                 <SelectTrigger id="model">
@@ -94,7 +129,18 @@ export default function BookPriceChecker() {
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>
+                  {error}
+                  {error.includes('API server') && (
+                    <p className="mt-2 text-xs">
+                      Make sure your backend server is running with the command:<br/>
+                      <code className="bg-gray-800 text-white px-1 py-0.5 rounded text-xs">
+                        python app.py
+                      </code> or similar in your API directory.
+                    </p>
+                  )}
+                </AlertDescription>
               </Alert>
             )}
 
