@@ -1,5 +1,6 @@
 # Web Framework
-Flask==2.0.1
+flask>=2.0.0
+werkzeug>=2.3.0,<3.0.0
 flask-cors==3.0.10
 
 # AI/ML
