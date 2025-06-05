@@ -28,7 +28,7 @@ class GeminiService(AIService):
         ```
         25.99
         ```
-        If the price cannot be determined from the sources, respond with 'N/A'. Please make sure the price is the current avaible price that you can find in the Sources below.
+        If the price cannot be determined from the sources, respond with 'N/A'. Please make sure the price is the current available price that you can find in the Sources below.
         Also add a List of all sources in square brackets at the end of the response.
         Each source should be separated by a comma. The source itself should be a DIRECT link to the ACTUAL website where the price was found, with NO placeholder text like 'example'.
         The sources should be reliable and well-known online bookstores. Remember to ONLY check for {book_format} books, no audio, e books or paperbacks.

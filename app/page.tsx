@@ -16,6 +16,7 @@ export default function BookPriceChecker() {
   const [model, setModel] = useState("openai")
   const [formatType, setFormatType] = useState("hardcover")
   const [price, setPrice] = useState<string | null>(null)
+  const [sources, setSources] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -36,7 +37,7 @@ export default function BookPriceChecker() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
       
-      const response = await fetch(`http://localhost:5000/api/retrieve`, {
+      const response = await fetch(`/api/retrieve`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -58,11 +59,12 @@ export default function BookPriceChecker() {
 
       const data = await response.json();
       setPrice(data.price);
+      setSources(data.sources || []);
     } catch (err) {
       if (err.name === 'AbortError') {
-        setError("Request timed out. Please check if the API server is running at http://localhost:5000");
+        setError("Request timed out. Please check if the API server is running");
       } else if (err instanceof TypeError && err.message.includes('fetch')) {
-        setError("Failed to connect to the API server. Please make sure it's running at http://localhost:5000");
+        setError("Failed to connect to the API server. Please make sure it's running");
       } else {
         setError(`${err instanceof Error ? err.message : "Unknown error"}. Check the console for more details.`);
       }
@@ -136,7 +138,7 @@ export default function BookPriceChecker() {
                     <p className="mt-2 text-xs">
                       Make sure your backend server is running with the command:<br/>
                       <code className="bg-gray-800 text-white px-1 py-0.5 rounded text-xs">
-                        python app.py
+                        pnpm run flask-dev
                       </code> or similar in your API directory.
                     </p>
                   )}
@@ -145,9 +147,22 @@ export default function BookPriceChecker() {
             )}
 
             {price !== null && (
-              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
-                <p className="text-sm text-gray-500">Price:</p>
-                <p className="text-2xl font-bold">${price} USD</p>
+              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md space-y-2">
+                <div>
+                  <p className="text-sm text-gray-500">Price:</p>
+                  <p className="text-2xl font-bold">€{price}</p>
+                </div>
+                {sources.length > 0 && (
+                  <ul className="list-disc list-inside text-sm text-gray-600">
+                    {sources.map((src) => (
+                      <li key={src}>
+                        <a href={src} className="underline" target="_blank" rel="noopener noreferrer">
+                          {src}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
           </form>
