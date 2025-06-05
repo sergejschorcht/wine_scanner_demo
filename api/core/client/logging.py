@@ -1,14 +1,16 @@
-import requests
-import logging
-
-from loguru._logger import Core, Logger
-
 import logging
 import os
 import datetime
-
-from colorama import init, Fore, Style
-from src.core.client.config import Config
+try:
+    from colorama import init, Fore, Style
+except Exception:  # pragma: no cover - optional dependency
+    class _Dummy:
+        def __getattr__(self, name):
+            return ""
+    def init(*_args, **_kwargs):
+        return None
+    Fore = Style = _Dummy()
+from .config import Config
 
 strings = {"info": "INF", "error": "ERR", "debug": "DBG", "warn": "WRN"}
 
@@ -27,7 +29,7 @@ class Logger:
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
 
-        self.webhook = Config.get("log.wehbook")
+        self.webhook = Config.get("log.webhook")
 
         file_handler = logging.FileHandler(file)
         file_handler.setLevel(logging.DEBUG)

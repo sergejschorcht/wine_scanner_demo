@@ -2,8 +2,6 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
-from services.openaiService import OpenAIService
-from services.geminiService import GeminiService
 
 # .env-Variablen laden
 load_dotenv()
@@ -15,15 +13,25 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})  # Enhanced CORS settings
 # Factory-Methode zur Auswahl des Modells
 def get_model(model_name: str):
     if model_name == "openai":
+        from .services.openaiService import OpenAIService
         return OpenAIService()
     elif model_name == "gemini":
+        try:
+            from .services.geminiService import GeminiService
+        except Exception as e:  # pragma: no cover - optional dependency
+            raise ImportError(
+                "GeminiService requires optional dependencies"  # Keep message simple
+            ) from e
         return GeminiService()
     else:
         raise ValueError("Ungültiges Modell")
 
 @app.route("/api/retrieve", methods=["POST"])
 def retrieve_price():
-    data = request.get_json()
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"error": "Missing JSON payload"}), 400
+
     book_name = data.get("book_name")
     format_type = data.get("format_type", "hardcover")  # Default to hardcover if not specified
     model_name = data.get("model", "openai")  # Default to openai if not specified
