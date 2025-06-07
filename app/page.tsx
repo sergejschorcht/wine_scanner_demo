@@ -36,7 +36,7 @@ export default function BookPriceChecker() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
       
-      const response = await fetch(`http://localhost:5000/api/retrieve`, {
+      const response = await fetch(`/api/retrieve`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
