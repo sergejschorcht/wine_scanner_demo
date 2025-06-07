@@ -58,13 +58,15 @@ export default function BookPriceChecker() {
 
       const data = await response.json();
       setPrice(data.price);
-    } catch (err) {
-      if (err.name === 'AbortError') {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
         setError("Request timed out. Please check if the API server is running at http://localhost:5000");
       } else if (err instanceof TypeError && err.message.includes('fetch')) {
         setError("Failed to connect to the API server. Please make sure it's running at http://localhost:5000");
+      } else if (err instanceof Error) {
+        setError(`${err.message}. Check the console for more details.`);
       } else {
-        setError(`${err instanceof Error ? err.message : "Unknown error"}. Check the console for more details.`);
+        setError("Unknown error. Check the console for more details.");
       }
       console.error("API Request Error:", err);
     } finally {
